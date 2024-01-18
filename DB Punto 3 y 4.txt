@@ -1,0 +1,195 @@
+-- Tabla ARTICULO
+CREATE TABLE ARTICULO (
+    cod_articulo INT PRIMARY KEY,
+    descripcion VARCHAR(255),
+    unidad_medida_manejo VARCHAR(50),
+    costo_promedio DECIMAL(10, 2)
+);
+
+-- Tabla BODEGA
+CREATE TABLE BODEGA (
+    cod_bodega INT PRIMARY KEY,
+    descripcion VARCHAR(255),
+    cod_ciudad INT,
+    fecha_cierre DATE,
+    FOREIGN KEY (cod_ciudad) REFERENCES CIUDAD(cod_ciudad)
+);
+
+-- Tabla UNIDAD_MEDIDA
+CREATE TABLE UNIDAD_MEDIDA (
+    cod_unidad_medida INT PRIMARY KEY,
+    descripcion VARCHAR(50)
+);
+
+-- Tabla CIUDAD
+CREATE TABLE CIUDAD (
+    cod_ciudad INT PRIMARY KEY,
+    descripcion VARCHAR(255),
+    nombre_departamento VARCHAR(255)
+);
+
+-- Tabla TALLA
+CREATE TABLE TALLA (
+    cod_talla INT PRIMARY KEY,
+    descripcion VARCHAR(50)
+);
+
+-- Tabla INVENTARIO_X_BODEGA
+CREATE TABLE INVENTARIO_X_BODEGA (
+    cod_bodega INT,
+    cod_articulo INT,
+    cantidad_existente INT,
+    cantidad_inventario_minimo INT,
+    PRIMARY KEY (cod_bodega, cod_articulo),
+    FOREIGN KEY (cod_bodega) REFERENCES BODEGA(cod_bodega),
+    FOREIGN KEY (cod_articulo) REFERENCES ARTICULO(cod_articulo)
+);
+
+-- Tabla DETALLE_INVENTARIO_TALLA
+CREATE TABLE DETALLE_INVENTARIO_TALLA (
+    cod_bodega INT,
+    cod_articulo INT,
+    cod_talla INT,
+    cantidad INT,
+    PRIMARY KEY (cod_bodega, cod_articulo, cod_talla),
+    FOREIGN KEY (cod_bodega) REFERENCES BODEGA(cod_bodega),
+    FOREIGN KEY (cod_articulo) REFERENCES ARTICULO(cod_articulo),
+    FOREIGN KEY (cod_talla) REFERENCES TALLA(cod_talla)
+);
+
+
+SELECT SUM(cantidad_existente) AS cantidad_total
+FROM INVENTARIO_X_BODEGA
+WHERE cod_bodega = 40;
+
+SELECT SUM(dit.cantidad) AS inventario_total_talla_S
+FROM DETALLE_INVENTARIO_TALLA dit
+JOIN TALLA t ON dit.cod_talla = t.cod_talla
+WHERE t.descripcion = 'S';
+
+SELECT t.descripcion AS talla,
+       b.cod_bodega,
+       b.descripcion AS nombre_bodega,
+       SUM(dit.cantidad) AS inventario_total
+FROM DETALLE_INVENTARIO_TALLA dit
+JOIN BODEGA b ON dit.cod_bodega = b.cod_bodega
+JOIN CIUDAD c ON b.cod_ciudad = c.cod_ciudad
+JOIN TALLA t ON dit.cod_talla = t.cod_talla
+WHERE c.nombre_departamento = 'TOLIMA'
+GROUP BY t.descripcion, b.cod_bodega, b.descripcion;
+
+
+SELECT b.cod_bodega,
+       b.descripcion AS nombre_bodega,
+       AVG(a.costo_promedio) AS costo_promedio_inventario
+FROM INVENTARIO_X_BODEGA ib
+JOIN BODEGA b ON ib.cod_bodega = b.cod_bodega
+JOIN ARTICULO a ON ib.cod_articulo = a.cod_articulo
+JOIN CIUDAD c ON b.cod_ciudad = c.cod_ciudad
+WHERE c.descripcion = 'BOGOTA'
+GROUP BY b.cod_bodega, b.descripcion;
+
+SELECT b.descripcion AS descripcion_bodega,
+       a.descripcion AS descripcion_articulo,
+       dit.cod_talla,
+       dit.cantidad
+FROM DETALLE_INVENTARIO_TALLA dit
+JOIN INVENTARIO_X_BODEGA ib ON dit.cod_bodega = ib.cod_bodega AND dit.cod_articulo = ib.cod_articulo
+JOIN BODEGA b ON dit.cod_bodega = b.cod_bodega
+JOIN ARTICULO a ON dit.cod_articulo = a.cod_articulo;
+
+  +---------------------+        +---------------------+
+  |      ARTICULO       |        |        BODEGA       |
+  +---------------------+        +---------------------+
+  | cod_articulo (PK)   |        | cod_bodega (PK)     |
+  | descripcion         |        | descripcion         |
+  | unidad_medida_manejo|        | cod_ciudad (FK)     |
+  | costo_promedio      |        | fecha_cierre        |
+  +---------------------+        +---------------------+
+           |                           |
+           |                           |
+           |                           |
+           v                           v
+  +---------------------+        +---------------------+
+  |  UNIDAD_MEDIDA      |        |        CIUDAD       |
+  +---------------------+        +---------------------+
+  | cod_unidad_medida(PK)|        | cod_ciudad (PK)     |
+  | descripcion         |        | descripcion         |
+  +---------------------+        | nombre_departamento |
+                                 +---------------------+
+                                           |
+                                           |
+                                           |
+                                           v
+                                 +---------------------+
+                                 |        TALLA        |
+                                 +---------------------+
+                                 | cod_talla (PK)      |
+                                 | descripcion         |
+                                 +---------------------+
+                                           |
+                                           |
+                                           |
+                         +-----------------+------------------+
+                         |     INVENTARIO_X_BODEGA              |
+                         +-----------------+------------------+
+                         | cod_bodega (PK, FK)                |
+                         | cod_articulo (PK, FK)              |
+                         | cantidad_existente                 |
+                         | cantidad_inventario_minimo         |
+                         +-----------------+------------------+
+                                           |
+                                           |
+                                           |
+                         +-----------------+------------------+
+                         | DETALLE_INVENTARIO_TALLA           |
+                         +-----------------+------------------+
+                         | cod_bodega (PK, FK)                |
+                         | cod_articulo (PK, FK)              |
+                         | cod_talla (PK, FK)                 |
+                         | cantidad                           |
+                         +-----------------+------------------+
+
+                         
+                         
+-- Insertar datos en la tabla ARTICULO
+INSERT INTO ARTICULO (cod_articulo, descripcion, unidad_medida_manejo, costo_promedio)
+VALUES
+(1, 'ProductoA', 'Unidad', 10.50),
+(2, 'ProductoB', 'Kilogramo', 15.75)
+
+-- Insertar datos en la tabla BODEGA
+INSERT INTO BODEGA (cod_bodega, descripcion, cod_ciudad, fecha_cierre)
+VALUES
+(1, 'Bodega1', 1, '2024-01-17'),
+(2, 'Bodega2', 2, '2024-01-17')
+
+-- Insertar datos en la tabla UNIDAD_MEDIDA
+INSERT INTO UNIDAD_MEDIDA (cod_unidad_medida, descripcion)
+VALUES
+(1, 'Unidad'),
+(2, 'Kilogramo')
+
+-- Insertar datos en la tabla CIUDAD
+INSERT INTO CIUDAD (cod_ciudad, descripcion, nombre_departamento)
+VALUES
+(1, 'Ciudad1', 'TOLIMA'),
+(2, 'Ciudad2', 'BOGOTA')
+
+-- Insertar datos en la tabla TALLA
+INSERT INTO TALLA (cod_talla, descripcion)
+VALUES
+(1, 'S'),
+(2, 'M')
+
+-- Insertar datos en la tabla INVENTARIO_X_BODEGA
+INSERT INTO INVENTARIO_X_BODEGA (cod_bodega, cod_articulo, cantidad_existente, cantidad_inventario_minimo)
+VALUES
+(1, 1, 100, 20),
+(1, 2, 50, 10)
+
+-- Insertar datos en la tabla DETALLE_INVENTARIO_TALLA
+INSERT INTO DETALLE_INVENTARIO_TALLA (cod_bodega, cod_articulo, cod_talla, cantidad)
+VALUES
+(1, 1, 1, 30),
+(1, 2, 1, 15)
